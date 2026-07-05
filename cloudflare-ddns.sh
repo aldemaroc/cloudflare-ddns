@@ -13,6 +13,19 @@ set -euo pipefail
 
 # ── Funções ──────────────────────────────────────────────────────────────────
 
+now() {
+  date '+%Y-%m-%d %H:%M:%S'
+}
+
+log() {
+  echo "[$(now)] $*"
+}
+
+err() {
+  echo "[$(now)] [ERRO] $*" >&2
+  exit 1
+}
+
 usage() {
   cat <<'EOF'
 cloudflare-ddns — Atualiza registros A (IPv4) e/ou AAAA (IPv6) na Cloudflare.
@@ -59,11 +72,6 @@ EOF
   exit 0
 }
 
-err() {
-  echo "[ERRO] $*" >&2
-  exit 1
-}
-
 # ── Parse dos parâmetros ────────────────────────────────────────────────────
 
 HOSTNAME=""
@@ -100,25 +108,24 @@ done
 
 # Se nem -4 nem -6 foram informados, detecta automaticamente
 if [[ "$DO_A" == false && "$DO_AAAA" == false ]]; then
-  echo "[INFO] Nenhum tipo de registro especificado. Detectando automaticamente..."
-  # Tenta IPv4
+  log "Nenhum tipo de registro especificado. Detectando automaticamente..."
   IPV4_TEST=$(curl -4 -s --max-time 5 https://ifconfig.me 2>/dev/null || \
               curl -4 -s --max-time 5 https://icanhazip.com 2>/dev/null || true)
-  # Tenta IPv6
   IPV6_TEST=$(curl -6 -s --max-time 5 https://ifconfig.me 2>/dev/null || \
               curl -6 -s --max-time 5 https://icanhazip.com 2>/dev/null || true)
   if [[ -n "$IPV4_TEST" ]]; then
     DO_A=true
-    echo "[INFO] IPv4 detectado: $IPV4_TEST"
+    log "IPv4 detectado: $IPV4_TEST"
   fi
   if [[ -n "$IPV6_TEST" ]]; then
     DO_AAAA=true
-    echo "[INFO] IPv6 detectado: $IPV6_TEST"
+    log "IPv6 detectado: $IPV6_TEST"
   fi
   if [[ "$DO_A" == false && "$DO_AAAA" == false ]]; then
     err "Não foi possível detectar IPv4 nem IPv6. Especifique -4 e/ou -6 manualmente."
   fi
 fi
+
 [[ "$TTL" -lt 60 ]] && TTL=60
 
 # Valida -p se informado
@@ -141,7 +148,7 @@ if [[ "$DO_A" == true ]]; then
           curl -4 -s --max-time 10 https://icanhazip.com 2>/dev/null || \
           curl -4 -s --max-time 10 https://api.ipify.org 2>/dev/null || true)
   [[ -z "$IPV4" ]] && err "Não foi possível obter o IPv4 público."
-  echo "[INFO] IPv4 público: $IPV4"
+  log "IPv4 público: $IPV4"
 fi
 
 if [[ "$DO_AAAA" == true ]]; then
@@ -149,12 +156,12 @@ if [[ "$DO_AAAA" == true ]]; then
           curl -6 -s --max-time 10 https://icanhazip.com 2>/dev/null || \
           curl -6 -s --max-time 10 https://api6.ipify.org 2>/dev/null || true)
   [[ -z "$IPV6" ]] && err "Não foi possível obter o IPv6 público."
-  echo "[INFO] IPv6 público: $IPV6"
+  log "IPv6 público: $IPV6"
 fi
 
 # ── Obtém Zone ID ────────────────────────────────────────────────────────────
 
-echo "[INFO] Obtendo Zone ID para: $ZONE"
+log "Obtendo Zone ID para: $ZONE"
 
 ZONE_RESPONSE=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$ZONE" \
   -H "Authorization: Bearer $API_TOKEN" \
@@ -171,7 +178,7 @@ except Exception:
 ")
 
 [[ -z "$ZONE_ID" ]] && err "Zone ID não encontrado para '$ZONE'. Verifique o nome da zona e a API Token."
-echo "[INFO] Zone ID: $ZONE_ID"
+log "Zone ID: $ZONE_ID"
 
 # ── Função de atualização ────────────────────────────────────────────────────
 
@@ -179,7 +186,7 @@ update_record() {
   local record_type="$1"
   local ip="$2"
 
-  echo "[INFO] Buscando registro $record_type existente para $HOSTNAME..."
+  log "Buscando registro $record_type existente para $HOSTNAME..."
 
   RECORD_JSON=$(curl -s -X GET \
     "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?type=$record_type&name=$HOSTNAME" \
@@ -217,7 +224,7 @@ except Exception:
 ")
 
   if [[ -n "$CURRENT_IP" && "$CURRENT_IP" == "$ip" ]]; then
-    echo "[OK] $HOSTNAME $record_type já está em $ip — nada a fazer."
+    log "[OK] $HOSTNAME $record_type já está em $ip — nada a fazer."
     return 0
   fi
 
@@ -258,14 +265,14 @@ print(json.dumps(d))
   fi
 
   if [[ -n "$RECORD_ID" ]]; then
-    echo "[INFO] Atualizando registro $record_type (ID: $RECORD_ID)..."
+    log "Atualizando registro $record_type (ID: $RECORD_ID)..."
     RESULT=$(curl -s -X PUT \
       "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID" \
       -H "Authorization: Bearer $API_TOKEN" \
       -H "Content-Type: application/json" \
       -d "$payload")
   else
-    echo "[INFO] Criando novo registro $record_type..."
+    log "Criando novo registro $record_type..."
     RESULT=$(curl -s -X POST \
       "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
       -H "Authorization: Bearer $API_TOKEN" \
@@ -283,7 +290,7 @@ except Exception:
 ")
 
   if [[ "$SUCCESS" == "True" ]]; then
-    echo "[OK] $HOSTNAME $record_type → $ip"
+    log "[OK] $HOSTNAME $record_type → $ip"
   else
     local err_msg
     err_msg=$(echo "$RESULT" | python3 -c "
@@ -294,7 +301,7 @@ try:
 except Exception:
     print('desconhecido')
 ")
-    echo "[FALHA] Falha ao atualizar $record_type: $err_msg" >&2
+    log "[FALHA] Falha ao atualizar $record_type: $err_msg"
     return 1
   fi
 }

@@ -108,21 +108,39 @@ sudo crontab -e
 Add one of these lines:
 
 ```cron
-# Every 5 minutes — IPv6 only
+# Every 5 minutes — IPv6 only, with log
 */5 * * * * /usr/local/bin/cloudflare-ddns -h myserver.example.com -k YOUR_TOKEN -6 >> /var/log/cloudflare-ddns.log 2>&1
 
-# Every minute — auto-detect (IPv4 and/or IPv6)
+# Every minute — auto-detect (IPv4 and/or IPv6), with log
 * * * * * /usr/local/bin/cloudflare-ddns -h myserver.example.com -k YOUR_TOKEN >> /var/log/cloudflare-ddns.log 2>&1
+```
+
+### Running cron without logs
+
+If you don't want log files, redirect output to `/dev/null`:
+
+```cron
+# Silent — no logs written
+*/5 * * * * /usr/local/bin/cloudflare-ddns -h myserver.example.com -k YOUR_TOKEN -6 > /dev/null 2>&1
+```
+
+Or use the `logger` command to send output to syslog instead of a file:
+
+```cron
+# Send to syslog (view with journalctl or /var/log/syslog)
+*/5 * * * * /usr/local/bin/cloudflare-ddns -h myserver.example.com -k YOUR_TOKEN -6 2>&1 | logger -t cloudflare-ddns
 ```
 
 ## Output
 
+Every log line is prefixed with a timestamp for easy debugging:
+
 ```
-[INFO] Obtendo Zone ID para: example.com
-[INFO] Zone ID: 47cadeb1e7e572cf407d98d68e982fd0
-[INFO] IPv6 público: 2001:db8::1
-[INFO] Buscando registro AAAA existente para myserver.example.com...
-[OK] myserver.example.com AAAA já está em 2001:db8::1 — nada a fazer.
+[2026-07-05 16:30:00] Obtendo Zone ID para: example.com
+[2026-07-05 16:30:00] Zone ID: 47cadeb1e7e572cf407d98d68e982fd0
+[2026-07-05 16:30:00] IPv6 público: 2001:db8::1
+[2026-07-05 16:30:00] Buscando registro AAAA existente para myserver.example.com...
+[2026-07-05 16:30:00] [OK] myserver.example.com AAAA já está em 2001:db8::1 — nada a fazer.
 ```
 
 ## How It Works
