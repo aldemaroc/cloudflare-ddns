@@ -7,7 +7,7 @@
 #   cloudflare-ddns -h <hostname> -k <api_token> [-z <zone>] [-4] [-6] [-p] [-t <ttl>]
 #
 # Créditos: Aldemaro Campos (aldemaro.com.br) e Chico
-# Licença: MIT
+# Licença: GPL v3
 # =============================================================================
 set -euo pipefail
 

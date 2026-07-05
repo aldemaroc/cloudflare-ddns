@@ -1,6 +1,6 @@
 # Cloudflare DDNS
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
 A lightweight, fully parameterized Bash script to dynamically update Cloudflare DNS **A** (IPv4) and **AAAA** (IPv6) records. No hardcoded configuration — everything is passed via command-line arguments.
 
@@ -153,7 +153,7 @@ Every log line is prefixed with a timestamp for easy debugging:
 
 ## License
 
-MIT
+GNU General Public License v3.0
 
 ## Credits
 
