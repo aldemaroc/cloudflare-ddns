@@ -120,9 +120,9 @@ Add one of these lines:
 ```
 [INFO] Obtendo Zone ID para: example.com
 [INFO] Zone ID: 47cadeb1e7e572cf407d98d68e982fd0
-[INFO] IPv6 público: 2804:2cbc:1f8e:e201:be24:11ff:fe75:9c22
+[INFO] IPv6 público: 2001:db8::1
 [INFO] Buscando registro AAAA existente para myserver.example.com...
-[OK] myserver.example.com AAAA já está em 2804:2cbc:1f8e:e201:be24:11ff:fe75:9c22 — nada a fazer.
+[OK] myserver.example.com AAAA já está em 2001:db8::1 — nada a fazer.
 ```
 
 ## How It Works
